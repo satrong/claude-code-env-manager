@@ -23,6 +23,10 @@ const formData = ref<EnvConfig>(
     env: {
       ANTHROPIC_AUTH_TOKEN: '',
       ANTHROPIC_BASE_URL: '',
+      API_TIMEOUT_MS: '3000000',
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
+      CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
+      ENABLE_TOOL_SEARCH: 0,
     },
   }
 );
@@ -42,6 +46,10 @@ watch(
         env: {
           ANTHROPIC_AUTH_TOKEN: '',
           ANTHROPIC_BASE_URL: '',
+          API_TIMEOUT_MS: '3000000',
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
+          CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
+          ENABLE_TOOL_SEARCH: 0,
         },
       };
     }

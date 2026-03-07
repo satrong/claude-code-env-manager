@@ -30,4 +30,5 @@ aes-gcm = "0.10"
 sha2 = "0.10"
 base64 = "0.22"
 rand = "0.9"
+notify = "8"
 

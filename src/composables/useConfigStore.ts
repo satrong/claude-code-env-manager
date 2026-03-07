@@ -1,5 +1,6 @@
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { Store } from '@tauri-apps/plugin-store';
 import type { EnvConfig, SettingsFile } from '../types/config';
 
@@ -89,6 +90,52 @@ async function encryptConfig(config: EnvConfig): Promise<EnvConfig> {
 
 export function useConfigStore() {
   const activeConfig = ref<EnvConfig | undefined>(undefined);
+  let unlistenSettingsChanged: UnlistenFn | null = null;
+
+  // 从 settings.json 同步启用状态
+  async function syncActiveConfigFromSettings(): Promise<void> {
+    try {
+      const settings = await readSettingsFile();
+      if (!settings?.env) return;
+
+      // 查找与当前 settings.json 匹配的配置
+      const currentToken = settings.env.ANTHROPIC_AUTH_TOKEN;
+      const currentBaseUrl = settings.env.ANTHROPIC_BASE_URL;
+
+      // 更新所有配置的 isActive 状态
+      let foundActive = false;
+      configs.value = configs.value.map((config) => {
+        // 比较解密后的 token 和 baseUrl
+        const isMatch =
+          config.env.ANTHROPIC_AUTH_TOKEN === currentToken &&
+          config.env.ANTHROPIC_BASE_URL === currentBaseUrl;
+
+        if (isMatch) {
+          foundActive = true;
+          return { ...config, isActive: true };
+        }
+        return { ...config, isActive: false };
+      });
+
+      // 更新 activeConfig
+      activeConfig.value = configs.value.find((c) => c.isActive);
+
+      // 同步更新 Store 中的状态
+      if (foundActive) {
+        const savedConfigs = await loadConfigsFromStore();
+        const decryptedConfigs = await Promise.all(savedConfigs.map(decryptConfig));
+        const updatedConfigs = decryptedConfigs.map((decrypted) => {
+          const isMatch =
+            decrypted.env.ANTHROPIC_AUTH_TOKEN === currentToken &&
+            decrypted.env.ANTHROPIC_BASE_URL === currentBaseUrl;
+          return { ...decrypted, isActive: isMatch };
+        });
+        await saveConfigsToStore(updatedConfigs);
+      }
+    } catch (e) {
+      console.error('Failed to sync active config from settings:', e);
+    }
+  }
 
   async function initialize(): Promise<void> {
     isLoading.value = true;
@@ -134,12 +181,26 @@ export function useConfigStore() {
 
       // 更新 activeConfig
       activeConfig.value = configs.value.find((c) => c.isActive);
+
+      // 监听 settings.json 变化
+      unlistenSettingsChanged = await listen('settings-changed', async () => {
+        console.log('settings.json changed, syncing active config...');
+        await syncActiveConfigFromSettings();
+      });
     } catch (e) {
       error.value = String(e);
     } finally {
       isLoading.value = false;
     }
   }
+
+  // 清理监听器
+  onUnmounted(() => {
+    if (unlistenSettingsChanged) {
+      unlistenSettingsChanged();
+      unlistenSettingsChanged = null;
+    }
+  });
 
   async function addConfig(config: EnvConfig): Promise<void> {
     const encryptedConfig = await encryptConfig(config);

@@ -1,10 +1,14 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
 use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
+use notify::{RecommendedWatcher, RecursiveMode, Event, EventKind, Watcher};
 use sha2::{Digest, Sha256};
+use tauri::{Manager, Emitter};
 
 const APP_SALT: &[u8] = b"claude-code-settings-encryption-salt";
 
@@ -105,6 +109,50 @@ fn decrypt(ciphertext: String) -> Result<String, String> {
     decrypt_data(&ciphertext)
 }
 
+// 启动 settings.json 文件监听
+fn start_settings_watcher(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let home = dirs::home_dir().ok_or("Could not find home directory")?;
+    let settings_path = home.join(".claude").join("settings.json");
+    let watch_dir = settings_path.parent()
+        .ok_or("Invalid settings path")?
+        .to_path_buf();
+
+    let app_handle_clone = app_handle.clone();
+
+    // 创建监听器
+    let mut watcher = RecommendedWatcher::new(
+        move |res: Result<Event, notify::Error>| {
+            match res {
+                Ok(event) => {
+                    // 只处理文件修改和创建事件
+                    if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
+                        // 检查是否是 settings.json 文件
+                        if event.paths.iter().any(|p| p.ends_with("settings.json")) {
+                            // 发送事件到前端
+                            if let Err(e) = app_handle_clone.emit("settings-changed", ()) {
+                                eprintln!("Failed to emit settings-changed event: {}", e);
+                            }
+                        }
+                    }
+                }
+                Err(e) => eprintln!("Watch error: {:?}", e),
+            }
+        },
+        notify::Config::default()
+            .with_poll_interval(Duration::from_secs(1))
+            .with_compare_contents(true),
+    ).map_err(|e| format!("Failed to create watcher: {}", e))?;
+
+    // 监听 ~/.claude 目录
+    watcher.watch(&watch_dir, RecursiveMode::NonRecursive)
+        .map_err(|e| format!("Failed to watch path: {}", e))?;
+
+    // 将 watcher 存储到 app state 中，防止被 drop
+    app_handle.manage(Arc::new(watcher));
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -118,6 +166,16 @@ pub fn run() {
             encrypt,
             decrypt
         ])
+        .setup(|app| {
+            let app_handle = app.handle().clone();
+            // 启动文件监听
+            std::thread::spawn(move || {
+                if let Err(e) = start_settings_watcher(app_handle) {
+                    eprintln!("Failed to start settings watcher: {}", e);
+                }
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

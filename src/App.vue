@@ -182,6 +182,11 @@ function closeForm() {
   box-sizing: border-box;
 }
 
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+}
+
 :root {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
@@ -199,6 +204,8 @@ function closeForm() {
 body {
   min-height: 100vh;
   background: transparent;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 /* Animated background */

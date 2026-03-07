@@ -184,31 +184,35 @@ export function useConfigStore() {
     }));
     await saveConfigsToStore(newSavedConfigs);
 
-    // 写入 settings.json（使用解密后的 token）
-    const settings: SettingsFile = {
-      env: {
-        ANTHROPIC_AUTH_TOKEN: config.env.ANTHROPIC_AUTH_TOKEN,
-        ANTHROPIC_BASE_URL: config.env.ANTHROPIC_BASE_URL,
-        ...(config.env.API_TIMEOUT_MS && { API_TIMEOUT_MS: config.env.API_TIMEOUT_MS }),
-        ...(config.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC !== undefined && {
-          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: config.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
-        }),
-        ...(config.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS !== undefined && {
-          CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: config.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
-        }),
-        ...(config.env.ENABLE_TOOL_SEARCH !== undefined && {
-          ENABLE_TOOL_SEARCH: config.env.ENABLE_TOOL_SEARCH,
-        }),
-        ...(config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL && {
-          ANTHROPIC_DEFAULT_HAIKU_MODEL: config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,
-        }),
-        ...(config.env.ANTHROPIC_DEFAULT_SONNET_MODEL && {
-          ANTHROPIC_DEFAULT_SONNET_MODEL: config.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
-        }),
-        ...(config.env.ANTHROPIC_DEFAULT_OPUS_MODEL && {
-          ANTHROPIC_DEFAULT_OPUS_MODEL: config.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
-        }),
-      },
+    // 读取现有 settings.json，只更新 env 字段
+    let settings = await readSettingsFile();
+    if (!settings) {
+      settings = {};
+    }
+
+    // 更新 env 字段（使用解密后的 token）
+    settings.env = {
+      ANTHROPIC_AUTH_TOKEN: config.env.ANTHROPIC_AUTH_TOKEN,
+      ANTHROPIC_BASE_URL: config.env.ANTHROPIC_BASE_URL,
+      ...(config.env.API_TIMEOUT_MS && { API_TIMEOUT_MS: config.env.API_TIMEOUT_MS }),
+      ...(config.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC !== undefined && {
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: config.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC,
+      }),
+      ...(config.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS !== undefined && {
+        CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: config.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS,
+      }),
+      ...(config.env.ENABLE_TOOL_SEARCH !== undefined && {
+        ENABLE_TOOL_SEARCH: config.env.ENABLE_TOOL_SEARCH,
+      }),
+      ...(config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL && {
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+      }),
+      ...(config.env.ANTHROPIC_DEFAULT_SONNET_MODEL && {
+        ANTHROPIC_DEFAULT_SONNET_MODEL: config.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
+      }),
+      ...(config.env.ANTHROPIC_DEFAULT_OPUS_MODEL && {
+        ANTHROPIC_DEFAULT_OPUS_MODEL: config.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
+      }),
     };
 
     await writeSettingsFile(settings);

@@ -16,13 +16,14 @@ export interface EnvConfig {
 }
 
 export interface SettingsFile {
-  env: Record<string, string | number>;
+  env?: Record<string, string | number>;
   permissions?: {
     allow?: string[];
     deny?: string[];
   };
   enabledPlugins?: Record<string, boolean>;
   language?: string;
+  [key: string]: unknown;
 }
 
 export const REQUIRED_FIELDS = ['ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL'] as const;

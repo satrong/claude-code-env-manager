@@ -33,29 +33,35 @@ const formData = ref<EnvConfig>(
 
 const errors = ref<Record<string, string>>({});
 
+function resetForm() {
+  if (props.config) {
+    formData.value = JSON.parse(JSON.stringify(props.config));
+  } else {
+    formData.value = {
+      id: '',
+      name: '',
+      isActive: false,
+      env: {
+        ANTHROPIC_AUTH_TOKEN: '',
+        ANTHROPIC_BASE_URL: '',
+        API_TIMEOUT_MS: '3000000',
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
+        CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
+        ENABLE_TOOL_SEARCH: 0,
+      },
+    };
+  }
+  errors.value = {};
+}
+
+// 当表单打开时重置
 watch(
-  () => props.config,
-  (newConfig) => {
-    if (newConfig) {
-      formData.value = JSON.parse(JSON.stringify(newConfig));
-    } else {
-      formData.value = {
-        id: '',
-        name: '',
-        isActive: false,
-        env: {
-          ANTHROPIC_AUTH_TOKEN: '',
-          ANTHROPIC_BASE_URL: '',
-          API_TIMEOUT_MS: '3000000',
-          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
-          CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
-          ENABLE_TOOL_SEARCH: 0,
-        },
-      };
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      resetForm();
     }
-    errors.value = {};
-  },
-  { immediate: true }
+  }
 );
 
 const isEdit = computed(() => !!props.config?.id);

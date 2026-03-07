@@ -1,69 +1,53 @@
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
-import { Client, Stronghold } from '@tauri-apps/plugin-stronghold';
-import { appLocalDataDir } from '@tauri-apps/api/path';
+import { Store } from '@tauri-apps/plugin-store';
 import type { EnvConfig, SettingsFile } from '../types/config';
 
 const configs = ref<EnvConfig[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
-let strongholdInstance: Stronghold | null = null;
-let clientInstance: Client | null = null;
-const CLIENT_NAME = 'claude-code-settings';
-const STORE_KEY = 'configs';
+const STORE_PATH = 'config-store.bin';
+const CONFIGS_KEY = 'configs';
 
-async function initStronghold(password: string): Promise<void> {
-  console.log('initStronghold: getting appLocalDataDir');
-  const appDir = await appLocalDataDir();
-  console.log('initStronghold: appLocalDataDir =', appDir);
-  // Ensure proper path joining
-  const vaultPath = appDir.endsWith('/') ? `${appDir}vault.hold` : `${appDir}/vault.hold`;
-  console.log('initStronghold: vaultPath =', vaultPath);
-  console.log('initStronghold: calling Stronghold.load');
-  try {
-    strongholdInstance = await Stronghold.load(vaultPath, password);
-    console.log('initStronghold: Stronghold.load completed');
-  } catch (loadError) {
-    console.error('initStronghold: Stronghold.load FAILED:', loadError);
-    throw loadError;
-  }
+let storeInstance: Store | null = null;
 
-  try {
-    console.log('initStronghold: loading client');
-    clientInstance = await strongholdInstance.loadClient(CLIENT_NAME);
-    console.log('initStronghold: client loaded');
-  } catch (e) {
-    console.log('initStronghold: client not found, creating new one, error:', e);
-    clientInstance = await strongholdInstance.createClient(CLIENT_NAME);
-    console.log('initStronghold: client created');
-  }
+// 加密字段标记
+const ENCRYPTED_PREFIX = 'enc:';
+
+function isEncrypted(value: string): boolean {
+  return value.startsWith(ENCRYPTED_PREFIX);
 }
 
-async function loadConfigsFromStronghold(): Promise<EnvConfig[]> {
-  if (!clientInstance) return [];
-
-  try {
-    const store = clientInstance.getStore();
-    const data = await store.get(STORE_KEY);
-    if (data) {
-      const json = new TextDecoder().decode(new Uint8Array(data));
-      return JSON.parse(json);
-    }
-  } catch (e) {
-    console.error('Failed to load configs from Stronghold:', e);
-  }
-  return [];
+async function encryptValue(value: string): Promise<string> {
+  if (!value) return value;
+  const encrypted = await invoke<string>('encrypt', { plaintext: value });
+  return ENCRYPTED_PREFIX + encrypted;
 }
 
-async function saveConfigsToStronghold(configsData: EnvConfig[]): Promise<void> {
-  if (!clientInstance || !strongholdInstance) return;
+async function decryptValue(value: string): Promise<string> {
+  if (!value || !isEncrypted(value)) return value;
+  const ciphertext = value.slice(ENCRYPTED_PREFIX.length);
+  return await invoke<string>('decrypt', { ciphertext });
+}
 
-  const store = clientInstance.getStore();
-  const json = JSON.stringify(configsData);
-  const data = Array.from(new TextEncoder().encode(json));
-  await store.insert(STORE_KEY, data);
-  await strongholdInstance.save();
+async function getStore(): Promise<Store> {
+  if (!storeInstance) {
+    storeInstance = await Store.load(STORE_PATH);
+  }
+  return storeInstance;
+}
+
+async function loadConfigsFromStore(): Promise<EnvConfig[]> {
+  const store = await getStore();
+  const data = await store.get<EnvConfig[]>(CONFIGS_KEY);
+  return data || [];
+}
+
+async function saveConfigsToStore(configsData: EnvConfig[]): Promise<void> {
+  const store = await getStore();
+  await store.set(CONFIGS_KEY, configsData);
+  await store.save();
 }
 
 async function readSettingsFile(): Promise<SettingsFile | null> {
@@ -81,31 +65,46 @@ async function writeSettingsFile(settings: SettingsFile): Promise<void> {
   await invoke('write_settings', { content });
 }
 
-export function useConfigStore() {
-  const activeConfig = computed(() => configs.value.find((c) => c.isActive));
+// 解密配置中的敏感字段
+async function decryptConfig(config: EnvConfig): Promise<EnvConfig> {
+  return {
+    ...config,
+    env: {
+      ...config.env,
+      ANTHROPIC_AUTH_TOKEN: await decryptValue(config.env.ANTHROPIC_AUTH_TOKEN),
+    },
+  };
+}
 
-  async function initialize(password: string): Promise<boolean> {
-    console.log('initialize: starting');
+// 加密配置中的敏感字段
+async function encryptConfig(config: EnvConfig): Promise<EnvConfig> {
+  return {
+    ...config,
+    env: {
+      ...config.env,
+      ANTHROPIC_AUTH_TOKEN: await encryptValue(config.env.ANTHROPIC_AUTH_TOKEN),
+    },
+  };
+}
+
+export function useConfigStore() {
+  const activeConfig = ref<EnvConfig | undefined>(undefined);
+
+  async function initialize(): Promise<void> {
     isLoading.value = true;
     error.value = null;
 
     try {
-      console.log('initialize: calling initStronghold');
-      await initStronghold(password);
-      console.log('initialize: initStronghold completed');
-      const savedConfigs = await loadConfigsFromStronghold();
-      console.log('initialize: loaded configs, count:', savedConfigs.length);
+      let savedConfigs = await loadConfigsFromStore();
 
       if (savedConfigs.length > 0) {
-        configs.value = savedConfigs;
+        // 解密所有配置
+        configs.value = await Promise.all(savedConfigs.map(decryptConfig));
       } else {
         // 尝试从现有的 settings.json 导入
-        console.log('initialize: no saved configs, trying to import from settings.json');
         try {
           const settings = await readSettingsFile();
-          console.log('initialize: readSettingsFile result:', settings ? 'got settings' : 'null');
           if (settings?.env) {
-            console.log('initialize: importing config from settings.json');
             const importedConfig: EnvConfig = {
               id: crypto.randomUUID(),
               name: '导入的配置',
@@ -122,61 +121,70 @@ export function useConfigStore() {
                 ANTHROPIC_DEFAULT_OPUS_MODEL: settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL ? String(settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL) : undefined,
               },
             };
+
+            // 加密后保存
+            const encryptedConfig = await encryptConfig(importedConfig);
+            await saveConfigsToStore([encryptedConfig]);
             configs.value = [importedConfig];
-            console.log('initialize: saving imported config to stronghold');
-            await saveConfigsToStronghold(configs.value);
-            console.log('initialize: imported config saved');
-          } else {
-            console.log('initialize: no settings.env to import');
           }
         } catch (importError) {
-          console.log('initialize: import failed:', importError);
-          // 继续执行，只是没有导入配置
+          console.log('Import from settings.json failed:', importError);
         }
       }
 
-      console.log('initialize: completed successfully');
-      isLoading.value = false;
-      return true;
+      // 更新 activeConfig
+      activeConfig.value = configs.value.find((c) => c.isActive);
     } catch (e) {
       error.value = String(e);
+    } finally {
       isLoading.value = false;
-      return false;
     }
   }
 
   async function addConfig(config: EnvConfig): Promise<void> {
-    configs.value.push(config);
-    await saveConfigsToStronghold(configs.value);
+    const encryptedConfig = await encryptConfig(config);
+    const newConfigs = [...configs.value, config];
+    await saveConfigsToStore([...await loadConfigsFromStore(), encryptedConfig]);
+    configs.value = newConfigs;
   }
 
   async function updateConfig(id: string, updates: Partial<EnvConfig>): Promise<void> {
     const index = configs.value.findIndex((c) => c.id === id);
-    if (index !== -1) {
-      configs.value[index] = { ...configs.value[index], ...updates };
-      await saveConfigsToStronghold(configs.value);
+    if (index === -1) return;
+
+    const updatedConfig = { ...configs.value[index], ...updates };
+    const encryptedConfig = await encryptConfig(updatedConfig);
+
+    const savedConfigs = await loadConfigsFromStore();
+    const savedIndex = savedConfigs.findIndex((c) => c.id === id);
+    if (savedIndex !== -1) {
+      savedConfigs[savedIndex] = encryptedConfig;
+      await saveConfigsToStore(savedConfigs);
     }
+
+    configs.value[index] = updatedConfig;
   }
 
   async function deleteConfig(id: string): Promise<void> {
+    const savedConfigs = await loadConfigsFromStore();
+    const filtered = savedConfigs.filter((c) => c.id !== id);
+    await saveConfigsToStore(filtered);
     configs.value = configs.value.filter((c) => c.id !== id);
-    await saveConfigsToStronghold(configs.value);
   }
 
   async function activateConfig(id: string): Promise<void> {
     const config = configs.value.find((c) => c.id === id);
     if (!config) return;
 
-    // 创建新的配置状态
-    const newConfigs = configs.value.map((c) => ({
+    // 更新 Store 中的 isActive 状态
+    const savedConfigs = await loadConfigsFromStore();
+    const newSavedConfigs = savedConfigs.map((c) => ({
       ...c,
       isActive: c.id === id,
     }));
+    await saveConfigsToStore(newSavedConfigs);
 
-    // 先保存到 Stronghold
-    await saveConfigsToStronghold(newConfigs);
-
-    // 写入 settings.json
+    // 写入 settings.json（使用解密后的 token）
     const settings: SettingsFile = {
       env: {
         ANTHROPIC_AUTH_TOKEN: config.env.ANTHROPIC_AUTH_TOKEN,
@@ -205,8 +213,12 @@ export function useConfigStore() {
 
     await writeSettingsFile(settings);
 
-    // 最后更新本地状态
-    configs.value = newConfigs;
+    // 更新本地状态
+    configs.value = configs.value.map((c) => ({
+      ...c,
+      isActive: c.id === id,
+    }));
+    activeConfig.value = config;
   }
 
   return {

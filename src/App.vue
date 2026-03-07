@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useConfigStore } from './composables/useConfigStore';
 import type { EnvConfig } from './types/config';
-import LockScreen from './components/LockScreen.vue';
 import ConfigCard from './components/ConfigCard.vue';
 import ConfigForm from './components/ConfigForm.vue';
-import { appLocalDataDir } from '@tauri-apps/api/path';
-import { exists } from '@tauri-apps/plugin-fs';
 
 const {
   configs,
@@ -19,8 +16,6 @@ const {
   activateConfig,
 } = useConfigStore();
 
-const isLocked = ref(true);
-const isFirstTime = ref(false);
 const showForm = ref(false);
 const editingConfig = ref<EnvConfig | undefined>(undefined);
 const deleteConfirmId = ref<string | null>(null);
@@ -28,39 +23,8 @@ const saveError = ref<string | null>(null);
 let deleteTimeout: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(async () => {
-  // Check if vault file exists to determine if this is first time use
-  try {
-    const appDir = await appLocalDataDir();
-    const vaultPath = appDir.endsWith('/') ? `${appDir}vault.hold` : `${appDir}/vault.hold`;
-    console.log('Checking vault path:', vaultPath);
-    const vaultExists = await exists(vaultPath);
-    console.log('Vault exists:', vaultExists);
-    isFirstTime.value = !vaultExists;
-    console.log('isFirstTime set to:', isFirstTime.value);
-  } catch (e) {
-    console.error('Error checking vault:', e);
-    isFirstTime.value = true;
-    console.log('isFirstTime set to true due to error');
-  }
+  await initialize();
 });
-
-onUnmounted(() => {
-  if (deleteTimeout) {
-    clearTimeout(deleteTimeout);
-  }
-});
-
-async function handleUnlock(password: string) {
-  console.log('handleUnlock called, password length:', password.length);
-  console.log('isFirstTime:', isFirstTime.value);
-  const success = await initialize(password);
-  console.log('initialize success:', success);
-  if (success) {
-    console.log('setting isLocked to false');
-    isLocked.value = false;
-    console.log('isLocked is now:', isLocked.value);
-  }
-}
 
 function openCreateForm() {
   editingConfig.value = undefined;
@@ -128,9 +92,7 @@ function closeForm() {
 </script>
 
 <template>
-  <LockScreen :visible="isLocked" :error="storeError ?? undefined" :is-first-time="isFirstTime" @unlock="handleUnlock" />
-
-  <div class="app-container" :class="{ hidden: isLocked }">
+  <div class="app-container">
     <header class="app-header">
       <div class="header-content">
         <div class="logo-section">
@@ -161,6 +123,18 @@ function closeForm() {
       <div v-if="isLoading" class="loading-state">
         <div class="spinner"></div>
         <p>加载中...</p>
+      </div>
+
+      <div v-else-if="storeError" class="error-state">
+        <div class="error-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <h2>加载失败</h2>
+        <p>{{ storeError }}</p>
       </div>
 
       <div v-else-if="configs.length === 0" class="empty-state">
@@ -257,13 +231,6 @@ body::before {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  transition: opacity 0.5s, filter 0.5s;
-}
-
-.app-container.hidden {
-  opacity: 0;
-  filter: blur(10px);
-  pointer-events: none;
 }
 
 .app-header {
@@ -343,7 +310,8 @@ body::before {
   width: 100%;
 }
 
-.loading-state {
+.loading-state,
+.error-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -351,6 +319,25 @@ body::before {
   min-height: 400px;
   gap: 16px;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+.error-icon {
+  width: 120px;
+  height: 120px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.error-state h2 {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .spinner {

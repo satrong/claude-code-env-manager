@@ -1,160 +1,466 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useConfigStore } from './composables/useConfigStore';
+import type { EnvConfig } from './types/config';
+import LockScreen from './components/LockScreen.vue';
+import ConfigCard from './components/ConfigCard.vue';
+import ConfigForm from './components/ConfigForm.vue';
+import { appLocalDataDir } from '@tauri-apps/api/path';
+import { exists } from '@tauri-apps/plugin-fs';
 
-const greetMsg = ref("");
-const name = ref("");
+const {
+  configs,
+  isLoading,
+  error: storeError,
+  initialize,
+  addConfig,
+  updateConfig,
+  deleteConfig,
+  activateConfig,
+} = useConfigStore();
 
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsg.value = await invoke("greet", { name: name.value });
+const isLocked = ref(true);
+const isFirstTime = ref(false);
+const showForm = ref(false);
+const editingConfig = ref<EnvConfig | undefined>(undefined);
+const deleteConfirmId = ref<string | null>(null);
+const saveError = ref<string | null>(null);
+let deleteTimeout: ReturnType<typeof setTimeout> | null = null;
+
+onMounted(async () => {
+  // Check if vault file exists to determine if this is first time use
+  try {
+    const appDir = await appLocalDataDir();
+    const vaultPath = appDir.endsWith('/') ? `${appDir}vault.hold` : `${appDir}/vault.hold`;
+    console.log('Checking vault path:', vaultPath);
+    const vaultExists = await exists(vaultPath);
+    console.log('Vault exists:', vaultExists);
+    isFirstTime.value = !vaultExists;
+    console.log('isFirstTime set to:', isFirstTime.value);
+  } catch (e) {
+    console.error('Error checking vault:', e);
+    isFirstTime.value = true;
+    console.log('isFirstTime set to true due to error');
+  }
+});
+
+onUnmounted(() => {
+  if (deleteTimeout) {
+    clearTimeout(deleteTimeout);
+  }
+});
+
+async function handleUnlock(password: string) {
+  console.log('handleUnlock called, password length:', password.length);
+  console.log('isFirstTime:', isFirstTime.value);
+  const success = await initialize(password);
+  console.log('initialize success:', success);
+  if (success) {
+    console.log('setting isLocked to false');
+    isLocked.value = false;
+    console.log('isLocked is now:', isLocked.value);
+  }
+}
+
+function openCreateForm() {
+  editingConfig.value = undefined;
+  saveError.value = null;
+  showForm.value = true;
+}
+
+function openEditForm(id: string) {
+  editingConfig.value = configs.value.find((c) => c.id === id);
+  saveError.value = null;
+  showForm.value = true;
+}
+
+async function handleSave(config: EnvConfig) {
+  try {
+    saveError.value = null;
+    if (editingConfig.value) {
+      await updateConfig(config.id, config);
+    } else {
+      await addConfig(config);
+    }
+    showForm.value = false;
+    editingConfig.value = undefined;
+  } catch (e) {
+    saveError.value = `保存失败: ${e}`;
+  }
+}
+
+async function handleDelete(id: string) {
+  if (deleteConfirmId.value === id) {
+    try {
+      await deleteConfig(id);
+    } catch (e) {
+      console.error('Failed to delete config:', e);
+    }
+    deleteConfirmId.value = null;
+    if (deleteTimeout) {
+      clearTimeout(deleteTimeout);
+      deleteTimeout = null;
+    }
+  } else {
+    deleteConfirmId.value = id;
+    if (deleteTimeout) {
+      clearTimeout(deleteTimeout);
+    }
+    deleteTimeout = setTimeout(() => {
+      deleteConfirmId.value = null;
+    }, 3000);
+  }
+}
+
+async function handleActivate(id: string) {
+  try {
+    await activateConfig(id);
+  } catch (e) {
+    console.error('Failed to activate config:', e);
+  }
+}
+
+function closeForm() {
+  showForm.value = false;
+  editingConfig.value = undefined;
+  saveError.value = null;
 }
 </script>
 
 <template>
-  <main class="container">
-    <h1>Welcome to Tauri + Vue</h1>
+  <LockScreen :visible="isLocked" :error="storeError ?? undefined" :is-first-time="isFirstTime" @unlock="handleUnlock" />
 
-    <div class="row">
-      <a href="https://vite.dev" target="_blank">
-        <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-      </a>
-      <a href="https://tauri.app" target="_blank">
-        <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-      </a>
-      <a href="https://vuejs.org/" target="_blank">
-        <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-      </a>
-    </div>
-    <p>Click on the Tauri, Vite, and Vue logos to learn more.</p>
+  <div class="app-container" :class="{ hidden: isLocked }">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Claude Code Settings</h1>
+            <p>环境配置管理器</p>
+          </div>
+        </div>
 
-    <form class="row" @submit.prevent="greet">
-      <input id="greet-input" v-model="name" placeholder="Enter a name..." />
-      <button type="submit">Greet</button>
-    </form>
-    <p>{{ greetMsg }}</p>
-  </main>
+        <button class="btn-create" @click="openCreateForm">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          新建配置
+        </button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <div v-if="isLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p>加载中...</p>
+      </div>
+
+      <div v-else-if="configs.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </div>
+        <h2>暂无配置</h2>
+        <p>点击上方按钮创建您的第一个配置</p>
+      </div>
+
+      <div v-else class="config-grid">
+        <ConfigCard
+          v-for="config in configs"
+          :key="config.id"
+          :config="config"
+          @edit="openEditForm"
+          @delete="handleDelete"
+          @activate="handleActivate"
+        />
+      </div>
+    </main>
+
+    <ConfigForm
+      :visible="showForm"
+      :config="editingConfig"
+      @save="handleSave"
+      @cancel="closeForm"
+    />
+
+    <!-- Delete confirmation toast -->
+    <Transition name="toast">
+      <div v-if="deleteConfirmId" class="delete-toast">
+        <span>再次点击确认删除</span>
+      </div>
+    </Transition>
+  </div>
 </template>
 
-<style scoped>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #249b73);
-}
-
-</style>
 <style>
+/* Global styles */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
-  line-height: 24px;
+  line-height: 1.5;
   font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
+  color: #fff;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  min-height: 100vh;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
 }
 
-.container {
-  margin: 0;
-  padding-top: 10vh;
+body {
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(52, 211, 153, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+#app {
+  min-height: 100vh;
+}
+</style>
+
+<style scoped>
+.app-container {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  transition: opacity 0.5s, filter 0.5s;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
+.app-container.hidden {
+  opacity: 0;
+  filter: blur(10px);
+  pointer-events: none;
 }
 
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
+.app-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.row {
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.1));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  color: #34d399;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+.logo-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.3px;
 }
 
-a:hover {
-  color: #535bf2;
+.logo-text p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 2px 0 0 0;
 }
 
-h1 {
+.btn-create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-create:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(52, 211, 153, 0.4);
+}
+
+.app-main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #34d399;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
   text-align: center;
 }
 
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+.empty-icon {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 24px;
+}
+
+.empty-state h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.delete-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: rgba(239, 68, 68, 0.9);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
   font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
-button {
-  cursor: pointer;
+/* Toast transition */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
 }
 
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
 }
 
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 16px 20px;
   }
 
-  a:hover {
-    color: #24c8db;
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
   }
 
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
+  .logo-section {
+    justify-content: center;
   }
-  button:active {
-    background-color: #0f0f0f69;
+
+  .btn-create {
+    justify-content: center;
+  }
+
+  .app-main {
+    padding: 20px;
+  }
+
+  .config-grid {
+    grid-template-columns: 1fr;
   }
 }
-
 </style>

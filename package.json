@@ -1,5 +1,5 @@
 {
-  "name": "claude-code-settings-env",
+  "name": "claude-code-env-manager",
   "private": true,
   "version": "0.1.0",
   "type": "module",

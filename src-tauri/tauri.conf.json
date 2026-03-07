@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "claude-code-settings-env",
+  "productName": "CC配置管理器",
   "version": "0.1.0",
-  "identifier": "com.satrong.claude-code-settings-env",
+  "identifier": "com.satrong.cc-env-manager",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "claude-code-settings-env",
+        "title": "CC配置管理器",
         "width": 800,
         "height": 600
       }

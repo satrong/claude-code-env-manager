@@ -97,15 +97,11 @@ function closeForm() {
       <div class="header-content">
         <div class="logo-section">
           <div class="logo-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-              <path d="M2 17l10 5 10-5"></path>
-              <path d="M2 12l10 5 10-5"></path>
-            </svg>
+            <img src="./assets/logo.svg" alt="Logo" width="48" height="48" />
           </div>
           <div class="logo-text">
-            <h1>Claude Code Settings</h1>
-            <p>环境配置管理器</p>
+            <h1>Claude Code 配置管理器</h1>
+            <p>环境配置管理器，加密存储您的密钥</p>
           </div>
         </div>
 
@@ -260,12 +256,9 @@ body::before {
 .logo-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.1));
-  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #34d399;
 }
 
 .logo-text h1 {

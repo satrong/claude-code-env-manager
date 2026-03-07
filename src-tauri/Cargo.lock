@@ -487,7 +487,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "claude-code-settings-env"
+name = "claude-code-env-manager"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",

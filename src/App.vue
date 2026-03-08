@@ -190,6 +190,18 @@ function closeForm() {
   box-sizing: border-box;
 }
 
+html,
+body,
+#app {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app input, #app textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 html {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: auto;

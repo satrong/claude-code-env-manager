@@ -102,7 +102,7 @@ function closeForm() {
       <div class="header-content">
         <div class="logo-section">
           <div class="logo-icon">
-            <img src="./assets/logo.svg" alt="Logo" width="48" height="48" />
+            <img src="./assets/logo.svg" alt="Logo" width="54" height="54" />
           </div>
           <div class="logo-text">
             <h1>Claude Code 配置管理器</h1>

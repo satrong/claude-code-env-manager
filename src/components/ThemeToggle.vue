@@ -1,18 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useTheme } from '../composables/useTheme';
 
-const { currentTheme, toggleTheme, getEffectiveTheme } = useTheme();
+const { toggleTheme, getEffectiveTheme } = useTheme();
+const effectiveTheme = computed(() => getEffectiveTheme());
 </script>
 
 <template>
   <button
     class="theme-toggle"
     @click="toggleTheme"
-    :title="getEffectiveTheme() === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
+    :aria-label="effectiveTheme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
+    :aria-pressed="effectiveTheme === 'dark'"
+    :title="effectiveTheme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
   >
-    <!-- 太阳图标 (亮色模式时显示) -->
+    <!-- 太阳图标 (暗色模式时显示) -->
     <svg
-      v-if="getEffectiveTheme() === 'dark'"
+      v-if="effectiveTheme === 'dark'"
       width="20"
       height="20"
       viewBox="0 0 24 24"
@@ -32,7 +36,7 @@ const { currentTheme, toggleTheme, getEffectiveTheme } = useTheme();
       <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
       <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
     </svg>
-    <!-- 月亮图标 (暗色模式时显示) -->
+    <!-- 月亮图标 (亮色模式时显示) -->
     <svg
       v-else
       width="20"
@@ -72,5 +76,10 @@ const { currentTheme, toggleTheme, getEffectiveTheme } = useTheme();
 
 .theme-toggle:active {
   transform: scale(0.95);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--border-secondary);
+  outline-offset: 2px;
 }
 </style>

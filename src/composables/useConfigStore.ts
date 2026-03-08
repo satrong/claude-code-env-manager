@@ -233,26 +233,9 @@ export function useConfigStore() {
     configs.value = configs.value.filter((c) => c.id !== id);
   }
 
-  async function activateConfig(id: string): Promise<void> {
-    const config = configs.value.find((c) => c.id === id);
-    if (!config) return;
-
-    // 更新 Store 中的 isActive 状态
-    const savedConfigs = await loadConfigsFromStore();
-    const newSavedConfigs = savedConfigs.map((c) => ({
-      ...c,
-      isActive: c.id === id,
-    }));
-    await saveConfigsToStore(newSavedConfigs);
-
-    // 读取现有 settings.json，只更新 env 字段
-    let settings = await readSettingsFile();
-    if (!settings) {
-      settings = {};
-    }
-
-    // 更新 env 字段（使用解密后的 token）
-    settings.env = {
+  // 构建用于 settings.json 的 env 对象
+  function buildSettingsEnv(config: EnvConfig): SettingsFile['env'] {
+    return {
       ANTHROPIC_AUTH_TOKEN: config.env.ANTHROPIC_AUTH_TOKEN,
       ANTHROPIC_BASE_URL: config.env.ANTHROPIC_BASE_URL,
       ...(config.env.API_TIMEOUT_MS && { API_TIMEOUT_MS: config.env.API_TIMEOUT_MS }),
@@ -275,6 +258,28 @@ export function useConfigStore() {
         ANTHROPIC_DEFAULT_OPUS_MODEL: config.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
       }),
     };
+  }
+
+  async function activateConfig(id: string): Promise<void> {
+    const config = configs.value.find((c) => c.id === id);
+    if (!config) return;
+
+    // 更新 Store 中的 isActive 状态
+    const savedConfigs = await loadConfigsFromStore();
+    const newSavedConfigs = savedConfigs.map((c) => ({
+      ...c,
+      isActive: c.id === id,
+    }));
+    await saveConfigsToStore(newSavedConfigs);
+
+    // 读取现有 settings.json，只更新 env 字段
+    let settings = await readSettingsFile();
+    if (!settings) {
+      settings = {};
+    }
+
+    // 更新 env 字段（使用解密后的 token）
+    settings.env = buildSettingsEnv(config);
 
     await writeSettingsFile(settings);
 

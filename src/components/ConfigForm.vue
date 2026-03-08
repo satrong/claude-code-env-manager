@@ -195,49 +195,7 @@ function toggleField(key: ToggleFieldKey) {
             </div>
 
             <div class="form-section">
-              <h3 class="section-title">开关选项</h3>
-
-              <div class="toggle-grid">
-                <button
-                  v-for="field in TOGGLE_FIELDS"
-                  :key="field.key"
-                  class="toggle-item"
-                  :class="{
-                    active: formData.env[field.key as ToggleFieldKey] === 1,
-                  }"
-                  @click="toggleField(field.key as ToggleFieldKey)"
-                >
-                  <div class="toggle-indicator">
-                    <svg
-                      v-if="formData.env[field.key as ToggleFieldKey] === 1"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="3"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                  <span class="toggle-label">{{ field.label }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="form-section">
               <h3 class="section-title">可选配置</h3>
-
-              <div class="form-group">
-                <label class="form-label">API_TIMEOUT_MS</label>
-                <input
-                  v-model="formData.env.API_TIMEOUT_MS"
-                  type="text"
-                  class="form-input"
-                  placeholder="例如：3000000"
-                />
-              </div>
-
               <div class="form-group">
                 <label class="form-label">ANTHROPIC_DEFAULT_HAIKU_MODEL</label>
                 <input
@@ -266,6 +224,43 @@ function toggleField(key: ToggleFieldKey) {
                   class="form-input"
                   placeholder="例如：claude-3-opus-20240229"
                 />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">API_TIMEOUT_MS</label>
+                <input
+                  v-model="formData.env.API_TIMEOUT_MS"
+                  type="text"
+                  class="form-input"
+                  placeholder="例如：3000000"
+                />
+              </div>
+
+              <div class="toggle-grid">
+                <button
+                  v-for="field in TOGGLE_FIELDS"
+                  :key="field.key"
+                  class="toggle-item"
+                  :class="{
+                    active: formData.env[field.key as ToggleFieldKey] === 1,
+                  }"
+                  @click="toggleField(field.key as ToggleFieldKey)"
+                >
+                  <div class="toggle-indicator">
+                    <svg
+                      v-if="formData.env[field.key as ToggleFieldKey] === 1"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <span class="toggle-label">{{ field.label }}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -315,7 +310,7 @@ function toggleField(key: ToggleFieldKey) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 28px;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border-primary);
 }
 
@@ -477,7 +472,7 @@ function toggleField(key: ToggleFieldKey) {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 20px 28px;
+  padding: 0.5rem 1rem;
   border-top: 1px solid var(--border-primary);
 }
 

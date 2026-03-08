@@ -70,9 +70,9 @@ const emit = defineEmits<{
 
 <style scoped>
 .config-card {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  backdrop-filter: var(--blur-card);
+  border: 1px solid var(--border-primary);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -87,15 +87,15 @@ const emit = defineEmits<{
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, var(--border-primary), transparent);
   opacity: 0;
   transition: opacity 0.3s;
 }
 
 .config-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border-color: var(--border-secondary);
+  box-shadow: var(--shadow-card);
 }
 
 .config-card:hover::before {
@@ -104,11 +104,11 @@ const emit = defineEmits<{
 
 .config-card.active {
   border-color: rgba(52, 211, 153, 0.5);
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(255, 255, 255, 0.05));
+  background: var(--gradient-card-active);
 }
 
 .config-card.active::before {
-  background: linear-gradient(90deg, #34d399, #10b981, #34d399);
+  background: var(--gradient-accent);
   opacity: 1;
 }
 
@@ -123,19 +123,19 @@ const emit = defineEmits<{
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--text-muted);
   transition: all 0.3s;
 }
 
 .status-indicator.active {
-  background: #34d399;
+  background: var(--accent-success);
   box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
 }
 
 .config-name {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
   white-space: nowrap;
@@ -159,13 +159,13 @@ const emit = defineEmits<{
 
 .label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .value {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-family: 'SF Mono', 'Fira Code', monospace;
 }
 
@@ -185,7 +185,7 @@ const emit = defineEmits<{
   justify-content: space-between;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-primary);
 }
 
 .btn-activate {
@@ -193,10 +193,10 @@ const emit = defineEmits<{
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #34d399, #10b981);
+  background: var(--gradient-accent);
   border: none;
   border-radius: 8px;
-  color: #000;
+  color: var(--text-inverse);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -215,7 +215,7 @@ const emit = defineEmits<{
   padding: 8px 16px;
   background: rgba(52, 211, 153, 0.2);
   border-radius: 8px;
-  color: #34d399;
+  color: var(--accent-success);
   font-size: 13px;
   font-weight: 600;
 }
@@ -231,21 +231,21 @@ const emit = defineEmits<{
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-button);
   border: none;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .btn-icon.btn-danger:hover {
   background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: var(--accent-danger);
 }
 </style>

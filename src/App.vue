@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useConfigStore } from './composables/useConfigStore';
+import { useTheme } from './composables/useTheme';
 import type { EnvConfig } from './types/config';
 import ConfigCard from './components/ConfigCard.vue';
 import ConfigForm from './components/ConfigForm.vue';
+import ThemeToggle from './components/ThemeToggle.vue';
 
 const {
   configs,
@@ -105,13 +107,16 @@ function closeForm() {
           </div>
         </div>
 
-        <button class="btn-create" @click="openCreateForm">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          新建配置
-        </button>
+        <div class="header-actions">
+          <ThemeToggle />
+          <button class="btn-create" @click="openCreateForm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            新建配置
+          </button>
+        </div>
       </div>
     </header>
 
@@ -192,8 +197,8 @@ html {
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
-  color: #fff;
-  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  color: var(--text-primary);
+  background: var(--gradient-bg);
   min-height: 100vh;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -217,9 +222,9 @@ body::before {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(52, 211, 153, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 20%, var(--glow-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, var(--glow-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, var(--glow-3) 0%, transparent 50%);
   pointer-events: none;
   z-index: -1;
 }
@@ -238,9 +243,9 @@ body::before {
 
 .app-header {
   padding: 24px 32px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-header);
+  backdrop-filter: var(--blur-header);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -252,6 +257,12 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .logo-section {
@@ -271,14 +282,14 @@ body::before {
 .logo-text h1 {
   font-size: 20px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.3px;
 }
 
 .logo-text p {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   margin: 2px 0 0 0;
 }
 
@@ -287,10 +298,10 @@ body::before {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #34d399, #10b981);
+  background: var(--gradient-accent);
   border: none;
   border-radius: 10px;
-  color: #000;
+  color: var(--text-inverse);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -299,7 +310,7 @@ body::before {
 
 .btn-create:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(52, 211, 153, 0.4);
+  box-shadow: var(--shadow-button);
 }
 
 .app-main {
@@ -318,7 +329,7 @@ body::before {
   justify-content: center;
   min-height: 400px;
   gap: 16px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
 }
 
 .error-state {
@@ -328,7 +339,7 @@ body::before {
 .error-icon {
   width: 120px;
   height: 120px;
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--bg-button);
   border-radius: 24px;
   display: flex;
   align-items: center;
@@ -337,14 +348,14 @@ body::before {
 }
 
 .error-state h2 {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #34d399;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -367,25 +378,25 @@ body::before {
 .empty-icon {
   width: 120px;
   height: 120px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-button);
   border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   margin-bottom: 24px;
 }
 
 .empty-state h2 {
   font-size: 24px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
 }
 
 .empty-state p {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -407,7 +418,7 @@ body::before {
   font-size: 14px;
   font-weight: 500;
   z-index: 1000;
-  backdrop-filter: blur(10px);
+  backdrop-filter: var(--blur-modal);
 }
 
 /* Toast transition */
@@ -435,6 +446,10 @@ body::before {
   }
 
   .logo-section {
+    justify-content: center;
+  }
+
+  .header-actions {
     justify-content: center;
   }
 

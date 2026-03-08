@@ -488,7 +488,7 @@ function toggleField(key: ToggleFieldKey) {
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(52, 211, 153, 0.4);
+  box-shadow: var(--shadow-button);
 }
 
 /* Modal transitions */

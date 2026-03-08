@@ -33,6 +33,21 @@ const formData = ref<EnvConfig>(
 
 const errors = ref<Record<string, string>>({});
 
+// 追踪鼠标按下的目标，防止拖拽误触发关闭
+const mouseDownTarget = ref<EventTarget | null>(null);
+
+function handleOverlayMouseDown(e: MouseEvent) {
+  mouseDownTarget.value = e.target;
+}
+
+function handleOverlayClick(e: MouseEvent) {
+  // 只有当 mousedown 和 mouseup 都发生在遮罩层本身时才关闭
+  if (e.target === e.currentTarget && mouseDownTarget.value === e.currentTarget) {
+    handleCancel();
+  }
+  mouseDownTarget.value = null;
+}
+
 function resetForm() {
   if (props.config) {
     formData.value = JSON.parse(JSON.stringify(props.config));
@@ -113,7 +128,12 @@ function toggleField(key: ToggleFieldKey) {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click.self="handleCancel">
+      <div
+        v-if="visible"
+        class="modal-overlay"
+        @mousedown="handleOverlayMouseDown"
+        @click="handleOverlayClick"
+      >
         <div class="modal-container">
           <div class="modal-header">
             <h2>{{ isEdit ? '编辑配置' : '新建配置' }}</h2>

@@ -93,7 +93,6 @@ const emit = defineEmits<{
 }
 
 .config-card:hover {
-  transform: translateY(-4px);
   border-color: var(--border-secondary);
   box-shadow: var(--shadow-card);
 }

@@ -2,17 +2,26 @@
 import { computed } from 'vue';
 import { useTheme } from '../composables/useTheme';
 
-const { toggleTheme, getEffectiveTheme } = useTheme();
+const { toggleTheme, getEffectiveTheme, getSystemTheme, currentTheme } = useTheme();
 const effectiveTheme = computed(() => getEffectiveTheme());
+
+// 检查是否与系统同步
+const isSyncedWithSystem = computed(() => {
+  if (currentTheme.value === 'system') return true;
+  return currentTheme.value === getSystemTheme();
+});
 </script>
 
 <template>
   <button
     class="theme-toggle"
+    :class="{ 'synced': isSyncedWithSystem }"
     @click="toggleTheme"
     :aria-label="effectiveTheme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
     :aria-pressed="effectiveTheme === 'dark'"
-    :title="effectiveTheme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'"
+    :title="isSyncedWithSystem
+      ? `${effectiveTheme === 'dark' ? '暗色' : '亮色'}模式（与系统同步）`
+      : `${effectiveTheme === 'dark' ? '暗色' : '亮色'}模式（已锁定）`"
   >
     <!-- 太阳图标 (暗色模式时显示) -->
     <svg
@@ -50,6 +59,12 @@ const effectiveTheme = computed(() => getEffectiveTheme());
     >
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
     </svg>
+    <!-- 同步指示器 -->
+    <span v-if="isSyncedWithSystem" class="sync-indicator" title="与系统同步">
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
+        <circle cx="4" cy="4" r="3" />
+      </svg>
+    </span>
   </button>
 </template>
 
@@ -66,6 +81,7 @@ const effectiveTheme = computed(() => getEffectiveTheme());
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .theme-toggle:hover {
@@ -81,5 +97,19 @@ const effectiveTheme = computed(() => getEffectiveTheme());
 .theme-toggle:focus-visible {
   outline: 2px solid var(--border-secondary);
   outline-offset: 2px;
+}
+
+.theme-toggle.synced {
+  border-color: var(--accent-primary);
+}
+
+.sync-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

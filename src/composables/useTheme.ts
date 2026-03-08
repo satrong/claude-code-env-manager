@@ -115,5 +115,6 @@ export function useTheme() {
     getEffectiveTheme,
     getSystemTheme,
     initializeTheme,
+    lastSystemTheme,
   };
 }

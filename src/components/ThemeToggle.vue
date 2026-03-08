@@ -2,13 +2,13 @@
 import { computed } from 'vue';
 import { useTheme } from '../composables/useTheme';
 
-const { toggleTheme, getEffectiveTheme, getSystemTheme, currentTheme } = useTheme();
+const { toggleTheme, getEffectiveTheme, currentTheme, lastSystemTheme } = useTheme();
 const effectiveTheme = computed(() => getEffectiveTheme());
 
 // 检查是否与系统同步
 const isSyncedWithSystem = computed(() => {
   if (currentTheme.value === 'system') return true;
-  return currentTheme.value === getSystemTheme();
+  return currentTheme.value === lastSystemTheme.value;
 });
 </script>
 
@@ -60,7 +60,7 @@ const isSyncedWithSystem = computed(() => {
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
     </svg>
     <!-- 同步指示器 -->
-    <span v-if="isSyncedWithSystem" class="sync-indicator" title="与系统同步">
+    <span v-if="isSyncedWithSystem" class="sync-indicator">
       <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
         <circle cx="4" cy="4" r="3" />
       </svg>

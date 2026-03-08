@@ -1,0 +1,100 @@
+/* 主题 CSS 变量定义 */
+
+/* 暗色主题 (默认) */
+:root,
+:root[data-theme="dark"] {
+  /* 背景色 */
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #1a1a2e;
+  --bg-card: rgba(255, 255, 255, 0.08);
+  --bg-header: rgba(0, 0, 0, 0.2);
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-button: rgba(255, 255, 255, 0.1);
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* 文字色 */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-inverse: #000000;
+
+  /* 边框色 */
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.15);
+  --border-focus: rgba(52, 211, 153, 0.5);
+
+  /* 强调色 */
+  --accent-primary: #34d399;
+  --accent-secondary: #10b981;
+  --accent-success: #34d399;
+  --accent-danger: #ef4444;
+
+  /* 渐变 */
+  --gradient-bg: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  --gradient-accent: linear-gradient(135deg, #34d399, #10b981);
+  --gradient-card-active: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(255, 255, 255, 0.05));
+
+  /* 光晕效果 */
+  --glow-1: rgba(52, 211, 153, 0.08);
+  --glow-2: rgba(99, 102, 241, 0.08);
+  --glow-3: rgba(236, 72, 153, 0.05);
+
+  /* 阴影 */
+  --shadow-card: 0 20px 40px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 25px 50px rgba(0, 0, 0, 0.5);
+  --shadow-button: 0 8px 24px rgba(52, 211, 153, 0.4);
+
+  /* 模糊效果 */
+  --blur-header: blur(10px);
+  --blur-modal: blur(8px);
+  --blur-card: blur(20px);
+}
+
+/* 亮色主题 */
+:root[data-theme="light"] {
+  /* 背景色 */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-header: rgba(255, 255, 255, 0.8);
+  --bg-input: rgba(0, 0, 0, 0.05);
+  --bg-button: rgba(0, 0, 0, 0.08);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* 文字色 */
+  --text-primary: #1e293b;
+  --text-secondary: rgba(30, 41, 59, 0.8);
+  --text-muted: rgba(30, 41, 59, 0.5);
+  --text-inverse: #ffffff;
+
+  /* 边框色 */
+  --border-primary: rgba(0, 0, 0, 0.1);
+  --border-secondary: rgba(0, 0, 0, 0.15);
+  --border-focus: rgba(16, 185, 129, 0.5);
+
+  /* 强调色 */
+  --accent-primary: #10b981;
+  --accent-secondary: #059669;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+
+  /* 渐变 */
+  --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  --gradient-accent: linear-gradient(135deg, #10b981, #059669);
+  --gradient-card-active: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(255, 255, 255, 0.5));
+
+  /* 光晕效果 - 亮色模式下更柔和 */
+  --glow-1: rgba(16, 185, 129, 0.06);
+  --glow-2: rgba(99, 102, 241, 0.06);
+  --glow-3: rgba(236, 72, 153, 0.04);
+
+  /* 阴影 */
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 25px 50px rgba(0, 0, 0, 0.15);
+  --shadow-button: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+  /* 模糊效果 */
+  --blur-header: blur(10px);
+  --blur-modal: blur(8px);
+  --blur-card: blur(20px);
+}

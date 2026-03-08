@@ -7,6 +7,7 @@ const THEME_KEY = 'app-theme';
 const currentTheme = ref<ThemeMode>('dark');
 const isInitialized = ref(false);
 const isListenerAdded = ref(false);
+const lastSystemTheme = ref<'light' | 'dark'>('dark');
 
 // 获取系统主题偏好
 function getSystemTheme(): 'light' | 'dark' {
@@ -67,10 +68,35 @@ function initializeTheme() {
   // 监听系统主题变化 (只注册一次)
   if (!isListenerAdded.value && typeof window !== 'undefined' && window.matchMedia) {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', () => {
-      if (currentTheme.value === 'system') {
-        applyTheme('system');
+
+    // 初始化 lastSystemTheme
+    lastSystemTheme.value = mediaQuery.matches ? 'dark' : 'light';
+
+    mediaQuery.addEventListener('change', (e) => {
+      const newSystemTheme = e.matches ? 'dark' : 'light';
+
+      // 检查是否应该跟随系统
+      // 条件：当前用户选择的是 'system' 或者 当前用户选择的主题与原系统主题一致
+      const shouldSync =
+        currentTheme.value === 'system' ||
+        currentTheme.value === lastSystemTheme.value;
+
+      if (shouldSync) {
+        // 如果用户选择的是明确的 light/dark（不是 system），则同步更新用户选择
+        if (currentTheme.value !== 'system') {
+          currentTheme.value = newSystemTheme;
+          // 持久化新的主题选择
+          try {
+            localStorage.setItem(THEME_KEY, newSystemTheme);
+          } catch {
+            // localStorage may be unavailable
+          }
+        }
+        applyTheme(currentTheme.value);
       }
+
+      // 更新 lastSystemTheme
+      lastSystemTheme.value = newSystemTheme;
     });
     isListenerAdded.value = true;
   }

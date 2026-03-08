@@ -18,6 +18,9 @@ const {
   activateConfig,
 } = useConfigStore();
 
+// 初始化主题系统
+useTheme();
+
 const showForm = ref(false);
 const editingConfig = ref<EnvConfig | undefined>(undefined);
 const deleteConfirmId = ref<string | null>(null);
@@ -333,7 +336,7 @@ body::before {
 }
 
 .error-state {
-  color: #ef4444;
+  color: var(--accent-danger);
 }
 
 .error-icon {

@@ -269,8 +269,8 @@ function toggleField(key: ToggleFieldKey) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: var(--bg-overlay);
+  backdrop-filter: var(--blur-modal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,8 +279,8 @@ function toggleField(key: ToggleFieldKey) {
 }
 
 .modal-container {
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(20, 20, 30, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: 20px;
   width: 100%;
   max-width: 560px;
@@ -288,7 +288,7 @@ function toggleField(key: ToggleFieldKey) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-modal);
 }
 
 .modal-header {
@@ -296,14 +296,14 @@ function toggleField(key: ToggleFieldKey) {
   justify-content: space-between;
   align-items: center;
   padding: 24px 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .btn-close {
@@ -312,17 +312,17 @@ function toggleField(key: ToggleFieldKey) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-button);
   border: none;
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -342,7 +342,7 @@ function toggleField(key: ToggleFieldKey) {
 .section-title {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin: 0 0 16px 0;
@@ -360,21 +360,21 @@ function toggleField(key: ToggleFieldKey) {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
 .required {
-  color: #ef4444;
+  color: var(--accent-danger);
 }
 
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--bg-input);
+  border: 1px solid var(--border-secondary);
   border-radius: 10px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
   transition: all 0.2s;
@@ -382,23 +382,23 @@ function toggleField(key: ToggleFieldKey) {
 }
 
 .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: rgba(52, 211, 153, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-focus);
+  background: var(--bg-card);
 }
 
 .form-input.error {
-  border-color: rgba(239, 68, 68, 0.5);
+  border-color: var(--accent-danger);
 }
 
 .error-text {
   display: block;
   font-size: 12px;
-  color: #ef4444;
+  color: var(--accent-danger);
   margin-top: 6px;
 }
 
@@ -412,8 +412,8 @@ function toggleField(key: ToggleFieldKey) {
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -421,19 +421,19 @@ function toggleField(key: ToggleFieldKey) {
 }
 
 .toggle-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-card);
+  border-color: var(--border-secondary);
 }
 
 .toggle-item.active {
-  background: rgba(52, 211, 153, 0.15);
-  border-color: rgba(52, 211, 153, 0.4);
+  background: var(--bg-active);
+  border-color: var(--accent-primary);
 }
 
 .toggle-indicator {
   width: 22px;
   height: 22px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--text-muted);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -443,14 +443,14 @@ function toggleField(key: ToggleFieldKey) {
 }
 
 .toggle-item.active .toggle-indicator {
-  background: #34d399;
-  border-color: #34d399;
-  color: #000;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--text-inverse);
 }
 
 .toggle-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
 }
 
 .modal-footer {
@@ -458,7 +458,7 @@ function toggleField(key: ToggleFieldKey) {
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border-primary);
 }
 
 .btn {
@@ -472,18 +472,18 @@ function toggleField(key: ToggleFieldKey) {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--bg-button);
+  color: var(--text-secondary);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #34d399, #10b981);
-  color: #000;
+  background: var(--gradient-accent);
+  color: var(--text-inverse);
 }
 
 .btn-primary:hover {

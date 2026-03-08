@@ -227,12 +227,16 @@ export function useConfigStore() {
 
     // 如果更新的是当前激活的配置，同步更新 settings.json
     if (updatedConfig.isActive) {
-      let settings = await readSettingsFile();
-      if (!settings) {
-        settings = {};
+      try {
+        let settings = await readSettingsFile();
+        if (!settings) {
+          settings = {};
+        }
+        settings.env = buildSettingsEnv(updatedConfig);
+        await writeSettingsFile(settings);
+      } catch (e) {
+        console.error('Failed to sync settings.json:', e);
       }
-      settings.env = buildSettingsEnv(updatedConfig);
-      await writeSettingsFile(settings);
     }
   }
 

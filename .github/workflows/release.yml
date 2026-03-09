@@ -70,3 +70,18 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Create portable version (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          cd src-tauri/target/release
+          mkdir -p portable
+          cp claude-code-env-manager.exe portable/
+          cd portable
+          7z a -tzip ../../../CC-portable-${{ github.ref_name }}-x64.zip claude-code-env-manager.exe
+
+      - name: Upload portable version
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: CC-portable-${{ github.ref_name }}-x64.zip

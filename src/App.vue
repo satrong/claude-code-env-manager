@@ -6,6 +6,7 @@ import type { EnvConfig } from './types/config';
 import ConfigCard from './components/ConfigCard.vue';
 import ConfigForm from './components/ConfigForm.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
+import draggable from 'vuedraggable';
 
 const {
   configs,
@@ -16,6 +17,7 @@ const {
   updateConfig,
   deleteConfig,
   activateConfig,
+  reorderConfigs,
 } = useConfigStore();
 
 // 初始化主题系统
@@ -94,6 +96,10 @@ function closeForm() {
   editingConfig.value = undefined;
   saveError.value = null;
 }
+
+function onDragEnd() {
+  reorderConfigs(configs.value);
+}
 </script>
 
 <template>
@@ -152,16 +158,24 @@ function closeForm() {
         <p>点击上方按钮创建您的第一个配置</p>
       </div>
 
-      <div v-else class="config-grid">
-        <ConfigCard
-          v-for="config in configs"
-          :key="config.id"
-          :config="config"
-          @edit="openEditForm"
-          @delete="handleDelete"
-          @activate="handleActivate"
-        />
-      </div>
+      <draggable
+        v-else
+        v-model="configs"
+        item-key="id"
+        class="config-grid"
+        ghost-class="ghost-card"
+        animation="200"
+        @end="onDragEnd"
+      >
+        <template #item="{ element: config }">
+          <ConfigCard
+            :config="config"
+            @edit="openEditForm"
+            @delete="handleDelete"
+            @activate="handleActivate"
+          />
+        </template>
+      </draggable>
     </main>
 
     <ConfigForm
@@ -419,6 +433,12 @@ body::before {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
+}
+
+.ghost-card {
+  opacity: 0.5;
+  background: var(--bg-button);
+  border-radius: 16px;
 }
 
 .delete-toast {

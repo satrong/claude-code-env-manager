@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch} from 'vue';
 import { useConfigStore } from './composables/useConfigStore';
 import { useTheme } from './composables/useTheme';
 import type { EnvConfig } from './types/config';
@@ -24,8 +24,7 @@ const {
 useTheme();
 
 const showForm = ref(false);
-const editingConfig = ref<EnvConfig | undefined>(undefined);
-const deleteConfirmId = ref<string | null>(null);
+const editingConfig = ref<EnvConfig | undefined>(undefined);const deleteConfirmId = ref<string | null>(null);
 const saveError = ref<string | null>(null);
 let deleteTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -97,8 +96,29 @@ function closeForm() {
   saveError.value = null;
 }
 
-function onDragEnd() {
-  reorderConfigs(configs.value);
+// 用于拖拽排序的本地数组
+const localConfigs = ref<EnvConfig[]>([]);
+
+// 监听 store 中的 configs 变化，同步到 localConfigs
+watch(
+  () => configs.value,
+  (newConfigs) => {
+    localConfigs.value = [...newConfigs];
+  },
+  { immediate: true }
+);
+
+function onDragStart() {
+  // 拖拽开始
+}
+
+function onDragEnd(e: { oldIndex: number; newIndex: number }) {
+  // 只有当位置真正改变时才更新 store
+  if (e.newIndex !== e.oldIndex) {
+    // 使用 :list 时，vuedraggable 已经自动更新了 localConfigs 数组
+    // 直接同步到 store
+    reorderConfigs([...localConfigs.value]);
+  }
 }
 </script>
 
@@ -160,20 +180,27 @@ function onDragEnd() {
 
       <draggable
         v-else
-        v-model="configs"
+        :list="localConfigs"
         item-key="id"
+        tag="div"
         class="config-grid"
         ghost-class="ghost-card"
+        chosen-class="chosen-card"
         animation="200"
+        :force-fallback="true"
+        fallback-class="drag-fallback"
+        @start="onDragStart"
         @end="onDragEnd"
       >
         <template #item="{ element: config }">
-          <ConfigCard
-            :config="config"
-            @edit="openEditForm"
-            @delete="handleDelete"
-            @activate="handleActivate"
-          />
+          <div class="card-wrapper">
+            <ConfigCard
+              :config="config"
+              @edit="openEditForm"
+              @delete="handleDelete"
+              @activate="handleActivate"
+            />
+          </div>
         </template>
       </draggable>
     </main>
@@ -204,7 +231,7 @@ function onDragEnd() {
   box-sizing: border-box;
 }
 
-html,
+/* html,
 body,
 #app {
   user-select: none;
@@ -219,7 +246,7 @@ body,
 html {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: auto;
-}
+} */
 
 :root {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -435,10 +462,37 @@ body::before {
   gap: 24px;
 }
 
+.card-wrapper {
+  cursor: grab;
+}
+
+.card-wrapper:active {
+  cursor: grabbing;
+}
+
+/* 拖拽效果样式 */
 .ghost-card {
-  opacity: 0.5;
-  background: var(--bg-button);
+  opacity: 0.3;
+  background: var(--accent-primary) !important;
+  border: 2px dashed var(--accent-primary) !important;
   border-radius: 16px;
+}
+
+.chosen-card {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
+  cursor: grabbing !important;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* fallback 模式下跟随鼠标的元素样式 */
+.drag-fallback {
+  opacity: 0.95;
+  transform: rotate(2deg) scale(1.03);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+  cursor: grabbing !important;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .delete-toast {

@@ -305,6 +305,14 @@ export function useConfigStore() {
     activeConfig.value = config;
   }
 
+  async function reorderConfigs(newConfigs: EnvConfig[]): Promise<void> {
+    // 加密所有配置后保存
+    const encryptedConfigs = await Promise.all(newConfigs.map(encryptConfig));
+    await saveConfigsToStore(encryptedConfigs);
+    // 更新本地状态（保持解密状态）
+    configs.value = newConfigs;
+  }
+
   return {
     configs,
     isLoading,
@@ -315,5 +323,6 @@ export function useConfigStore() {
     updateConfig,
     deleteConfig,
     activateConfig,
+    reorderConfigs,
   };
 }

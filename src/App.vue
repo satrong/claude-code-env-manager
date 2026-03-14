@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, watch} from 'vue';
+import { useTemplateRef } from 'vue';
+import { useSortable } from '@vueuse/integrations/useSortable';
+import type { SortableEvent } from 'sortablejs';
 import { useConfigStore } from './composables/useConfigStore';
 import { useTheme } from './composables/useTheme';
 import type { EnvConfig } from './types/config';
 import ConfigCard from './components/ConfigCard.vue';
 import ConfigForm from './components/ConfigForm.vue';
 import ThemeToggle from './components/ThemeToggle.vue';
-import draggable from 'vuedraggable';
 
 const {
   configs,
@@ -100,6 +102,9 @@ function closeForm() {
 // 用于拖拽排序的本地数组
 const localConfigs = ref<EnvConfig[]>([]);
 
+// 拖拽容器 ref
+const sortableEl = useTemplateRef<HTMLDivElement>('sortableEl');
+
 // 监听 store 中的 configs 变化，同步到 localConfigs
 watch(
   () => configs.value,
@@ -109,11 +114,26 @@ watch(
   { immediate: true }
 );
 
+// 初始化拖拽排序
+useSortable(sortableEl, localConfigs, {
+  animation: 200,
+  ghostClass: 'ghost-card',
+  chosenClass: 'chosen-card',
+  dragClass: 'drag-fallback',
+  forceFallback: true,
+  watchElement: true,
+  onUpdate: (e: SortableEvent) => {
+    if (e.newIndex !== undefined && e.oldIndex !== undefined && e.newIndex !== e.oldIndex) {
+      onDragEnd({ oldIndex: e.oldIndex, newIndex: e.newIndex });
+    }
+  },
+});
+
 async function onDragEnd(e: { oldIndex: number; newIndex: number }) {
   // 只有当位置真正改变时才更新 store
   if (e.newIndex !== e.oldIndex) {
     try {
-      // 使用 :list 时，vuedraggable 已经自动更新了 localConfigs 数组
+      // useSortable 已经自动更新了 localConfigs 数组
       // 直接同步到 store
       await reorderConfigs([...localConfigs.value]);
     } catch (err) {
@@ -181,30 +201,16 @@ async function onDragEnd(e: { oldIndex: number; newIndex: number }) {
         <p>点击上方按钮创建您的第一个配置</p>
       </div>
 
-      <draggable
-        v-else
-        :list="localConfigs"
-        item-key="id"
-        tag="div"
-        class="config-grid"
-        ghost-class="ghost-card"
-        chosen-class="chosen-card"
-        animation="200"
-        :force-fallback="true"
-        fallback-class="drag-fallback"
-        @end="onDragEnd"
-      >
-        <template #item="{ element: config }">
-          <div class="card-wrapper">
-            <ConfigCard
-              :config="config"
-              @edit="openEditForm"
-              @delete="handleDelete"
-              @activate="handleActivate"
-            />
-          </div>
-        </template>
-      </draggable>
+      <div v-else ref="sortableEl" class="config-grid">
+        <div v-for="config in localConfigs" :key="config.id" class="card-wrapper">
+          <ConfigCard
+            :config="config"
+            @edit="openEditForm"
+            @delete="handleDelete"
+            @activate="handleActivate"
+          />
+        </div>
+      </div>
     </main>
 
     <ConfigForm

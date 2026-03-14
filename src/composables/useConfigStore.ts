@@ -306,9 +306,18 @@ export function useConfigStore() {
   }
 
   async function reorderConfigs(newConfigs: EnvConfig[]): Promise<void> {
-    // 加密所有配置后保存
-    const encryptedConfigs = await Promise.all(newConfigs.map(encryptConfig));
-    await saveConfigsToStore(encryptedConfigs);
+    // 获取当前存储中的已加密配置，避免重新加密
+    const savedConfigs = await loadConfigsFromStore();
+
+    // 创建 ID 到加密配置的映射
+    const encryptedMap = new Map(savedConfigs.map(c => [c.id, c]));
+
+    // 按新顺序重新排列加密配置
+    const reorderedEncryptedConfigs = newConfigs
+      .map(c => encryptedMap.get(c.id))
+      .filter((c): c is EnvConfig => c !== undefined);
+
+    await saveConfigsToStore(reorderedEncryptedConfigs);
     // 更新本地状态（保持解密状态）
     configs.value = newConfigs;
   }

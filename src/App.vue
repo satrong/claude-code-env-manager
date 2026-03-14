@@ -24,7 +24,8 @@ const {
 useTheme();
 
 const showForm = ref(false);
-const editingConfig = ref<EnvConfig | undefined>(undefined);const deleteConfirmId = ref<string | null>(null);
+const editingConfig = ref<EnvConfig | undefined>(undefined);
+const deleteConfirmId = ref<string | null>(null);
 const saveError = ref<string | null>(null);
 let deleteTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -108,16 +109,18 @@ watch(
   { immediate: true }
 );
 
-function onDragStart() {
-  // 拖拽开始
-}
-
-function onDragEnd(e: { oldIndex: number; newIndex: number }) {
+async function onDragEnd(e: { oldIndex: number; newIndex: number }) {
   // 只有当位置真正改变时才更新 store
   if (e.newIndex !== e.oldIndex) {
-    // 使用 :list 时，vuedraggable 已经自动更新了 localConfigs 数组
-    // 直接同步到 store
-    reorderConfigs([...localConfigs.value]);
+    try {
+      // 使用 :list 时，vuedraggable 已经自动更新了 localConfigs 数组
+      // 直接同步到 store
+      await reorderConfigs([...localConfigs.value]);
+    } catch (err) {
+      console.error('Failed to reorder configs:', err);
+      // 恢复原始顺序
+      localConfigs.value = [...configs.value];
+    }
   }
 }
 </script>
@@ -189,7 +192,6 @@ function onDragEnd(e: { oldIndex: number; newIndex: number }) {
         animation="200"
         :force-fallback="true"
         fallback-class="drag-fallback"
-        @start="onDragStart"
         @end="onDragEnd"
       >
         <template #item="{ element: config }">

@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag version (e.g., v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   create-release:
@@ -12,22 +18,34 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.create-release.outputs.result }}
+      tag_name: ${{ steps.get-tag.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: get tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: get version
         run: echo "PACKAGE_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').package.version")" >> $GITHUB_ENV
 
       - name: create release
         id: create-release
+        env:
+          TAG_NAME: ${{ steps.get-tag.outputs.tag }}
         uses: actions/github-script@v7
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: context.refName,
+              tag_name: process.env.TAG_NAME,
               name: `CC配置管理器 v${process.env.PACKAGE_VERSION}`,
               body: 'See the assets to download and install this version.',
               draft: true,
@@ -100,13 +118,13 @@ jobs:
           mkdir -p portable
           cp claude-code-env-manager.exe portable/
           cd portable
-          7z a -tzip ../../../CC-portable-${{ github.ref_name }}-x64.zip claude-code-env-manager.exe
+          7z a -tzip ../../../CC-portable-${{ needs.create-release.outputs.tag_name }}-x64.zip claude-code-env-manager.exe
 
       - name: Upload portable version
         if: matrix.platform == 'windows-latest'
         uses: softprops/action-gh-release@v1
         with:
-          files: CC-portable-${{ github.ref_name }}-x64.zip
+          files: CC-portable-${{ needs.create-release.outputs.tag_name }}-x64.zip
           release_id: ${{ needs.create-release.outputs.release_id }}
 
   publish-release:

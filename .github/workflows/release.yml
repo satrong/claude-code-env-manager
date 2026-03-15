@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   create-release:
     permissions:
@@ -125,7 +128,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: CC-portable-${{ needs.create-release.outputs.tag_name }}-x64.zip
-          release_id: ${{ needs.create-release.outputs.release_id }}
+          tag_name: ${{ needs.create-release.outputs.tag_name }}
 
   publish-release:
     permissions:

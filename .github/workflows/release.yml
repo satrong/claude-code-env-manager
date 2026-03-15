@@ -45,10 +45,36 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const tagName = process.env.TAG_NAME;
+
+            // 检查 release 是否已存在
+            let existingRelease;
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tagName
+              });
+              existingRelease = data;
+            } catch (e) {
+              // Release 不存在，继续创建
+            }
+
+            if (existingRelease) {
+              // 如果是 draft，使用现有的 release
+              if (existingRelease.draft) {
+                console.log(`Found existing draft release with id: ${existingRelease.id}`);
+                return existingRelease.id;
+              } else {
+                throw new Error(`Release for tag ${tagName} already exists and is published. Cannot recreate.`);
+              }
+            }
+
+            // 创建新的 draft release
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: process.env.TAG_NAME,
+              tag_name: tagName,
               name: `CC配置管理器 v${process.env.PACKAGE_VERSION}`,
               body: 'See the assets to download and install this version.',
               draft: true,

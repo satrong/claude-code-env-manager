@@ -152,9 +152,11 @@ jobs:
       - name: Upload portable version
         if: matrix.platform == 'windows-latest'
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: CC-portable-${{ needs.create-release.outputs.tag_name }}-x64.zip
-          tag_name: ${{ needs.create-release.outputs.tag_name }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
 
   publish-release:
     permissions:
@@ -169,10 +171,26 @@ jobs:
           release_id: ${{ needs.create-release.outputs.release_id }}
         with:
           script: |
-            github.rest.repos.updateRelease({
+            const releaseId = process.env.release_id;
+
+            // 获取当前 release 状态
+            const { data: release } = await github.rest.repos.getRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              release_id: process.env.release_id,
+              release_id: releaseId
+            });
+
+            // 如果已经是发布状态，无需更新
+            if (!release.draft) {
+              console.log(`Release ${releaseId} is already published, skipping.`);
+              return;
+            }
+
+            // 将 draft 更新为发布状态
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
               draft: false,
               prerelease: false
             })

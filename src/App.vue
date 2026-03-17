@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch} from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { useTemplateRef } from 'vue';
-import { useSortable } from '@vueuse/integrations/useSortable';
+import { useSortable, moveArrayElement } from '@vueuse/integrations/useSortable';
 import type { SortableEvent } from 'sortablejs';
 import { useConfigStore } from './composables/useConfigStore';
 import { useTheme } from './composables/useTheme';
@@ -124,7 +124,10 @@ useSortable(sortableEl, localConfigs, {
   watchElement: true,
   onUpdate: (e: SortableEvent) => {
     if (e.newIndex !== undefined && e.oldIndex !== undefined && e.newIndex !== e.oldIndex) {
-      onDragEnd({ oldIndex: e.oldIndex, newIndex: e.newIndex });
+      moveArrayElement(localConfigs, e.oldIndex, e.newIndex, e);
+      nextTick(() => {
+        onDragEnd({ oldIndex: e.oldIndex!, newIndex: e.newIndex! });
+      });
     }
   },
 });

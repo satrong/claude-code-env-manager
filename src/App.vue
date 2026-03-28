@@ -120,6 +120,8 @@ useSortable(sortableEl, localConfigs, {
   ghostClass: 'ghost-card',
   chosenClass: 'chosen-card',
   dragClass: 'drag-fallback',
+  filter: '.card-footer',
+  preventOnFilter: false,
   forceFallback: true,
   watchElement: true,
   onUpdate: (e: SortableEvent) => {
@@ -475,6 +477,10 @@ body::before {
 
 .card-wrapper {
   cursor: grab;
+}
+
+.card-wrapper :deep(.card-footer) {
+  cursor: default;
 }
 
 .card-wrapper:active {

@@ -223,7 +223,7 @@ export function useConfigStore() {
       await saveConfigsToStore(savedConfigs);
     }
 
-    configs.value[index] = updatedConfig;
+    configs.value = configs.value.map((c, i) => i === index ? updatedConfig : c);
 
     // 如果更新的是当前激活的配置，同步更新 settings.json
     if (updatedConfig.isActive) {

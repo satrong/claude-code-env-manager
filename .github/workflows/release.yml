@@ -22,6 +22,7 @@ jobs:
     outputs:
       release_id: ${{ steps.create-release.outputs.result }}
       tag_name: ${{ steps.get-tag.outputs.tag }}
+      version: ${{ steps.get-version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +36,14 @@ jobs:
             echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: get version
-        run: echo "PACKAGE_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').package.version")" >> $GITHUB_ENV
+      - name: get version from tag
+        id: get-version
+        env:
+          TAG_NAME: ${{ steps.get-tag.outputs.tag }}
+        run: |
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: create release
         id: create-release
@@ -131,6 +138,21 @@ jobs:
 
       - name: Install frontend dependencies
         run: pnpm install
+
+      - name: Sync version from tag
+        if: needs.create-release.outputs.version != ''
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+        shell: bash
+        run: |
+          echo "Syncing version to: $VERSION"
+          # Update package.json
+          node -e "const p=require('./package.json'); p.version='$VERSION'; require('fs').writeFileSync('./package.json', JSON.stringify(p, null, 2) + '\n')"
+          # Update src-tauri/tauri.conf.json
+          node -e "const c=require('./src-tauri/tauri.conf.json'); c.version='$VERSION'; require('fs').writeFileSync('./src-tauri/tauri.conf.json', JSON.stringify(c, null, 2) + '\n')"
+          # Update src-tauri/Cargo.toml
+          sed -i.bak 's/^version = ".*"/version = "'"$VERSION"'"/' src-tauri/Cargo.toml && rm -f src-tauri/Cargo.toml.bak
+          echo "Done."
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0

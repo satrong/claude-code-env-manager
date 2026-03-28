@@ -11,15 +11,45 @@ use sha2::{Digest, Sha256};
 use tauri::{Manager, Emitter};
 
 const APP_SALT: &[u8] = b"claude-code-settings-encryption-salt";
+const FALLBACK_SALT: &[u8] = b"claude-code-settings-fallback-key-salt";
 
-fn get_encryption_key() -> Result<[u8; 32], String> {
-    let machine_id = machine_uid::get().map_err(|e| format!("Failed to get machine ID: {}", e))?;
+fn get_fallback_key() -> Result<[u8; 32], String> {
+    let username = std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_default();
+    let hostname = std::env::var("HOSTNAME")
+        .or_else(|_| std::env::var("COMPUTERNAME"))
+        .unwrap_or_default();
+    let exe_path = std::env::current_exe()
+        .map_err(|e| format!("Failed to get exe path: {}", e))?
+        .to_string_lossy()
+        .to_string();
+
     let mut hasher = Sha256::new();
-    hasher.update(machine_id.as_bytes());
-    hasher.update(APP_SALT);
+    hasher.update(username.as_bytes());
+    hasher.update(hostname.as_bytes());
+    hasher.update(exe_path.as_bytes());
+    hasher.update(FALLBACK_SALT);
     let result = hasher.finalize();
     let key: [u8; 32] = result.into();
     Ok(key)
+}
+
+fn get_encryption_key() -> Result<[u8; 32], String> {
+    match machine_uid::get() {
+        Ok(machine_id) => {
+            let mut hasher = Sha256::new();
+            hasher.update(machine_id.as_bytes());
+            hasher.update(APP_SALT);
+            let result = hasher.finalize();
+            let key: [u8; 32] = result.into();
+            Ok(key)
+        }
+        Err(_) => {
+            eprintln!("Warning: machine_uid unavailable, using fallback encryption key");
+            get_fallback_key()
+        }
+    }
 }
 
 fn encrypt_data(plaintext: &str) -> Result<String, String> {

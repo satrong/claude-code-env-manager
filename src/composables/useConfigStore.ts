@@ -120,15 +120,12 @@ export function useConfigStore() {
       // 更新 activeConfig
       activeConfig.value = configs.value.find((c) => c.isActive);
 
-      // 同步更新 Store 中的状态
+      // 同步更新 Store 中的状态（保持加密，仅更新 isActive）
       if (foundActive) {
         const savedConfigs = await loadConfigsFromStore();
-        const decryptedConfigs = await Promise.all(savedConfigs.map(decryptConfig));
-        const updatedConfigs = decryptedConfigs.map((decrypted) => {
-          const isMatch =
-            decrypted.env.ANTHROPIC_AUTH_TOKEN === currentToken &&
-            decrypted.env.ANTHROPIC_BASE_URL === currentBaseUrl;
-          return { ...decrypted, isActive: isMatch };
+        const updatedConfigs = savedConfigs.map((saved) => {
+          const matchedConfig = configs.value.find((c) => c.id === saved.id);
+          return { ...saved, isActive: matchedConfig?.isActive ?? false };
         });
         await saveConfigsToStore(updatedConfigs);
       }

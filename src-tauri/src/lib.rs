@@ -9,6 +9,9 @@ use aes_gcm::{
 use notify::{RecommendedWatcher, RecursiveMode, Event, EventKind, Watcher};
 use sha2::{Digest, Sha256};
 use tauri::{Manager, Emitter};
+use tokio::sync::Mutex;
+
+mod http_server;
 
 const APP_SALT: &[u8] = b"claude-code-settings-encryption-salt";
 const FALLBACK_SALT: &[u8] = b"claude-code-settings-fallback-key-salt";
@@ -57,7 +60,6 @@ fn encrypt_data(plaintext: &str) -> Result<String, String> {
     let cipher = Aes256Gcm::new_from_slice(&key)
         .map_err(|e| format!("Failed to create cipher: {}", e))?;
 
-    // Generate a random nonce
     let nonce_bytes: [u8; 12] = rand::random();
     let nonce = Nonce::from_slice(&nonce_bytes);
 
@@ -65,7 +67,6 @@ fn encrypt_data(plaintext: &str) -> Result<String, String> {
         .encrypt(nonce, plaintext.as_bytes())
         .map_err(|e| format!("Encryption failed: {}", e))?;
 
-    // Prepend nonce to ciphertext and encode as base64
     let mut combined = nonce_bytes.to_vec();
     combined.extend(ciphertext);
     Ok(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &combined))
@@ -139,7 +140,13 @@ fn decrypt(ciphertext: String) -> Result<String, String> {
     decrypt_data(&ciphertext)
 }
 
-// 启动 settings.json 文件监听
+#[tauri::command]
+async fn get_http_server_port(app: tauri::AppHandle) -> Result<u16, String> {
+    let state = app.state::<HttpServerState>();
+    let guard = state.port.lock().await;
+    guard.ok_or_else(|| "HTTP server not running".to_string())
+}
+
 fn start_settings_watcher(app_handle: tauri::AppHandle) -> Result<(), String> {
     let home = dirs::home_dir().ok_or("Could not find home directory")?;
     let settings_path = home.join(".claude").join("settings.json");
@@ -149,16 +156,12 @@ fn start_settings_watcher(app_handle: tauri::AppHandle) -> Result<(), String> {
 
     let app_handle_clone = app_handle.clone();
 
-    // 创建监听器
     let mut watcher = RecommendedWatcher::new(
         move |res: Result<Event, notify::Error>| {
             match res {
                 Ok(event) => {
-                    // 只处理文件修改和创建事件
                     if matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
-                        // 检查是否是 settings.json 文件
                         if event.paths.iter().any(|p| p.ends_with("settings.json")) {
-                            // 发送事件到前端
                             if let Err(e) = app_handle_clone.emit("settings-changed", ()) {
                                 eprintln!("Failed to emit settings-changed event: {}", e);
                             }
@@ -173,14 +176,16 @@ fn start_settings_watcher(app_handle: tauri::AppHandle) -> Result<(), String> {
             .with_compare_contents(true),
     ).map_err(|e| format!("Failed to create watcher: {}", e))?;
 
-    // 监听 ~/.claude 目录
     watcher.watch(&watch_dir, RecursiveMode::NonRecursive)
         .map_err(|e| format!("Failed to watch path: {}", e))?;
 
-    // 将 watcher 存储到 app state 中，防止被 drop
     app_handle.manage(Arc::new(watcher));
 
     Ok(())
+}
+
+pub struct HttpServerState {
+    port: Mutex<Option<u16>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -189,23 +194,86 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            let parsed = parse_notify_args(&args);
+            if let Some((title, body)) = parsed {
+                let _ = app.emit("notification-received", serde_json::json!({
+                    "title": title,
+                    "body": body,
+                }));
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            } else {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        }))
+        .manage(HttpServerState {
+            port: Mutex::new(None),
+        })
         .invoke_handler(tauri::generate_handler![
             get_settings_path,
             read_settings,
             write_settings,
             encrypt,
-            decrypt
+            decrypt,
+            get_http_server_port,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
-            // 启动文件监听
+
             std::thread::spawn(move || {
-                if let Err(e) = start_settings_watcher(app_handle) {
+                if let Err(e) = start_settings_watcher(app_handle.clone()) {
                     eprintln!("Failed to start settings watcher: {}", e);
                 }
             });
+
+            let app_handle_for_http = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = http_server::start(app_handle_for_http).await {
+                    eprintln!("Failed to start HTTP server: {}", e);
+                }
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn parse_notify_args(args: &[String]) -> Option<(String, String)> {
+    let mut title: Option<String> = None;
+    let mut body: Option<String> = None;
+    let mut i = 0;
+
+    while i < args.len() {
+        match args[i].as_str() {
+            "notify" => {}
+            "-t" | "--title" => {
+                if i + 1 < args.len() {
+                    title = Some(args[i + 1].clone());
+                    i += 1;
+                }
+            }
+            "-b" | "--body" => {
+                if i + 1 < args.len() {
+                    body = Some(args[i + 1].clone());
+                    i += 1;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+
+    match (title, body) {
+        (Some(t), Some(b)) => Some((t, b)),
+        _ => None,
+    }
 }

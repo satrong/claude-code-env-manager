@@ -160,6 +160,7 @@ export function useConfigStore() {
                 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: settings.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC === 1 ? 1 : settings.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC === 0 ? 0 : undefined,
                 CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: settings.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS === 1 ? 1 : settings.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS === 0 ? 0 : undefined,
                 ENABLE_TOOL_SEARCH: settings.env.ENABLE_TOOL_SEARCH === 1 ? 1 : settings.env.ENABLE_TOOL_SEARCH === 0 ? 0 : undefined,
+                CLAUDE_CODE_ATTRIBUTION_HEADER: settings.env.CLAUDE_CODE_ATTRIBUTION_HEADER === 1 ? 1 : settings.env.CLAUDE_CODE_ATTRIBUTION_HEADER === 0 ? 0 : undefined,
                 ANTHROPIC_DEFAULT_HAIKU_MODEL: settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL ? String(settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL) : undefined,
                 ANTHROPIC_DEFAULT_SONNET_MODEL: settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL ? String(settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL) : undefined,
                 ANTHROPIC_DEFAULT_OPUS_MODEL: settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL ? String(settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL) : undefined,
@@ -258,6 +259,9 @@ export function useConfigStore() {
       }),
       ...(config.env.ENABLE_TOOL_SEARCH !== undefined && {
         ENABLE_TOOL_SEARCH: config.env.ENABLE_TOOL_SEARCH,
+      }),
+      ...(config.env.CLAUDE_CODE_ATTRIBUTION_HEADER !== undefined && {
+        CLAUDE_CODE_ATTRIBUTION_HEADER: config.env.CLAUDE_CODE_ATTRIBUTION_HEADER,
       }),
       ...(config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL && {
         ANTHROPIC_DEFAULT_HAIKU_MODEL: config.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,

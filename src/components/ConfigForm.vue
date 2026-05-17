@@ -3,7 +3,24 @@ import { ref, watch, computed } from 'vue';
 import type { EnvConfig } from '../types/config';
 import { TOGGLE_FIELDS } from '../types/config';
 
-type ToggleFieldKey = 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' | 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS' | 'ENABLE_TOOL_SEARCH';
+type ToggleFieldKey = 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' | 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS' | 'ENABLE_TOOL_SEARCH' | 'CLAUDE_CODE_ATTRIBUTION_HEADER';
+
+function createDefaultConfig(): EnvConfig {
+  return {
+    id: '',
+    name: '',
+    isActive: false,
+    env: {
+      ANTHROPIC_AUTH_TOKEN: '',
+      ANTHROPIC_BASE_URL: '',
+      API_TIMEOUT_MS: '3000000',
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
+      CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
+      ENABLE_TOOL_SEARCH: 0,
+      CLAUDE_CODE_ATTRIBUTION_HEADER: 1,
+    },
+  };
+}
 
 const props = defineProps<{
   config?: EnvConfig;
@@ -15,21 +32,7 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-const formData = ref<EnvConfig>(
-  props.config || {
-    id: '',
-    name: '',
-    isActive: false,
-    env: {
-      ANTHROPIC_AUTH_TOKEN: '',
-      ANTHROPIC_BASE_URL: '',
-      API_TIMEOUT_MS: '3000000',
-      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
-      CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
-      ENABLE_TOOL_SEARCH: 0,
-    },
-  }
-);
+const formData = ref<EnvConfig>(props.config || createDefaultConfig());
 
 const errors = ref<Record<string, string>>({});
 
@@ -52,19 +55,7 @@ function resetForm() {
   if (props.config) {
     formData.value = JSON.parse(JSON.stringify(props.config));
   } else {
-    formData.value = {
-      id: '',
-      name: '',
-      isActive: false,
-      env: {
-        ANTHROPIC_AUTH_TOKEN: '',
-        ANTHROPIC_BASE_URL: '',
-        API_TIMEOUT_MS: '3000000',
-        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: 1,
-        CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS: 1,
-        ENABLE_TOOL_SEARCH: 0,
-      },
-    };
+    formData.value = createDefaultConfig();
   }
   errors.value = {};
 }
@@ -121,6 +112,8 @@ function toggleField(key: ToggleFieldKey) {
     formData.value.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS = formData.value.env.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS === 1 ? 0 : 1;
   } else if (key === 'ENABLE_TOOL_SEARCH') {
     formData.value.env.ENABLE_TOOL_SEARCH = formData.value.env.ENABLE_TOOL_SEARCH === 1 ? 0 : 1;
+  } else if (key === 'CLAUDE_CODE_ATTRIBUTION_HEADER') {
+    formData.value.env.CLAUDE_CODE_ATTRIBUTION_HEADER = formData.value.env.CLAUDE_CODE_ATTRIBUTION_HEADER === 1 ? 0 : 1;
   }
 }
 </script>

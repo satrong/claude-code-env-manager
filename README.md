@@ -63,6 +63,7 @@ pnpm tauri build
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 禁用非必要流量 | 否 |
 | `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | 禁用实验性功能 | 否 |
 | `ENABLE_TOOL_SEARCH` | 启用工具搜索 | 否 |
+| `CLAUDE_CODE_ATTRIBUTION_HEADER` | 启用归因头 | 否 |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | 默认 Haiku 模型 | 否 |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | 默认 Sonnet 模型 | 否 |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | 默认 Opus 模型 | 否 |

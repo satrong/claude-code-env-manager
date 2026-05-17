@@ -9,6 +9,7 @@ export interface EnvConfig {
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC?: 0 | 1;
     CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS?: 0 | 1;
     ENABLE_TOOL_SEARCH?: 0 | 1;
+    CLAUDE_CODE_ATTRIBUTION_HEADER?: 0 | 1;
     ANTHROPIC_DEFAULT_HAIKU_MODEL?: string;
     ANTHROPIC_DEFAULT_SONNET_MODEL?: string;
     ANTHROPIC_DEFAULT_OPUS_MODEL?: string;
@@ -39,6 +40,7 @@ export const TOGGLE_FIELDS = [
   { key: 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', label: '禁用非必要流量' },
   { key: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', label: '禁用实验性功能' },
   { key: 'ENABLE_TOOL_SEARCH', label: '启用工具搜索' },
+  { key: 'CLAUDE_CODE_ATTRIBUTION_HEADER', label: '启用归因头' },
 ] as const;
 
 export function createEmptyConfig(name: string = '新配置'): EnvConfig {
